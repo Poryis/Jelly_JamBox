@@ -15,28 +15,28 @@ const NOTE_FREQUENCIES = {
 
 // Bell audio file mapping
 const BELL_AUDIO_FILES = {
-  C: '/assets/audio/C - Do.mp3',
-  D: '/assets/audio/D - Re.mp3',
-  E: '/assets/audio/E - Mi.mp3',
-  F: '/assets/audio/F - Fa.mp3',
-  G: '/assets/audio/G - So.mp3',
-  A: '/assets/audio/A - La.mp3',
-  B: '/assets/audio/B - ti.mp3',
-  'High C': '/assets/audio/High C - High Do.mp3'
+  C: `${process.env.PUBLIC_URL}/assets/audio/C - Do.mp3`,
+  D: `${process.env.PUBLIC_URL}/assets/audio/D - Re.mp3`,
+  E: `${process.env.PUBLIC_URL}/assets/audio/E - Mi.mp3`,
+  F: `${process.env.PUBLIC_URL}/assets/audio/F - Fa.mp3`,
+  G: `${process.env.PUBLIC_URL}/assets/audio/G - So.mp3`,
+  A: `${process.env.PUBLIC_URL}/assets/audio/A - La.mp3`,
+  B: `${process.env.PUBLIC_URL}/assets/audio/B - ti.mp3`,
+  'High C': `${process.env.PUBLIC_URL}/assets/audio/High C - High Do.mp3`
 };
 
 // Drum audio file mapping  
 const DRUM_AUDIO_FILES = {
-  kick: '/assets/audio/Bass drum - kick.mp3',
-  snare: '/assets/audio/Snare.mp3',
-  hihat: '/assets/audio/Hi Hat closed.mp3',
-  crash: '/assets/audio/Crash cymbal.mp3',
-  ride: '/assets/audio/Ride.mp3',
-  tom: '/assets/audio/Tom.mp3',
-  lowTom: '/assets/audio/Low Tom.mp3',
-  scratchPull: '/assets/audio/scratch-pull.mp3',
-  scratchPush: '/assets/audio/scratch-push.mp3',
-  scratchPushPull: '/assets/audio/scratch-push-pull.mp3'
+  kick: `${process.env.PUBLIC_URL}/assets/audio/Bass drum - kick.mp3`,
+  snare: `${process.env.PUBLIC_URL}/assets/audio/Snare.mp3`,
+  hihat: `${process.env.PUBLIC_URL}/assets/audio/Hi Hat closed.mp3`,
+  crash: `${process.env.PUBLIC_URL}/assets/audio/Crash cymbal.mp3`,
+  ride: `${process.env.PUBLIC_URL}/assets/audio/Ride.mp3`,
+  tom: `${process.env.PUBLIC_URL}/assets/audio/Tom.mp3`,
+  lowTom: `${process.env.PUBLIC_URL}/assets/audio/Low Tom.mp3`,
+  scratchPull: `${process.env.PUBLIC_URL}/assets/audio/scratch-pull.mp3`,
+  scratchPush: `${process.env.PUBLIC_URL}/assets/audio/scratch-push.mp3`,
+  scratchPushPull: `${process.env.PUBLIC_URL}/assets/audio/scratch-push-pull.mp3`
 };
 
 export function useAudio() {
@@ -78,14 +78,12 @@ export function useAudio() {
     loadedRef.current = true;
   }, [initAudioContext]);
 
-  // Play a bell note - supports polyphonic playback (multiple notes at once)
+  // Play a bell note - supports polyphonic playback
   const playBellNote = useCallback((note) => {
     const ctx = initAudioContext();
 
-    // Try to play loaded audio file
     const buffer = audioBuffersRef.current[note];
     if (buffer) {
-      // Create a NEW source node each time (allows polyphonic playback)
       const source = ctx.createBufferSource();
       const gainNode = ctx.createGain();
       
@@ -104,33 +102,25 @@ export function useAudio() {
 
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
-
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(freq, ctx.currentTime);
-
-    // Bell-like envelope
     gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
-
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
-
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.8);
   }, [initAudioContext]);
 
-  // Play drum sound - supports polyphonic playback
+  // Play drum sound
   const playDrumSound = useCallback((drum) => {
     const ctx = initAudioContext();
-
     const buffer = audioBuffersRef.current[drum];
     if (buffer) {
       const source = ctx.createBufferSource();
       const gainNode = ctx.createGain();
-      
       source.buffer = buffer;
       gainNode.gain.setValueAtTime(0.8, ctx.currentTime);
-      
       source.connect(gainNode);
       gainNode.connect(ctx.destination);
       source.start(0);
@@ -140,7 +130,6 @@ export function useAudio() {
   // Play success/feedback sound
   const playFeedbackSound = useCallback((type) => {
     const ctx = initAudioContext();
-
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -155,15 +144,12 @@ export function useAudio() {
 
     gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
-
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.3);
   }, [initAudioContext]);
 
-  // Preload on mount
   useEffect(() => {
     preloadAudio();
   }, [preloadAudio]);

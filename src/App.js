@@ -1,49 +1,156 @@
-import { useState, useCallback } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
-import HomePage from "./pages/HomePage";
-import FreePlayPage from "./pages/FreePlayPage";
-import RhythmGamePage from "./pages/RhythmGamePage";
-import SimonSaysPage from "./pages/SimonSaysPage";
-import EarTrainerPage from "./pages/EarTrainerPage";
-import LoopStudioPage from "./pages/LoopStudioPage";
-import StickerBookPage from "./pages/StickerBookPage";
-import StickerToast from "./components/StickerToast";
+// Audio hook for playing bell sounds - supports polyphonic playback
+import { useCallback, useRef, useEffect } from 'react';
 
-function App() {
-  const [score, setScore] = useState(0);
-  const [gameStats, setGameStats] = useState({
-    perfect: 0, great: 0, good: 0, miss: 0, streak: 0, maxStreak: 0
-  });
+// Note frequencies for Web Audio API fallback
+const NOTE_FREQUENCIES = {
+  C: 261.63,
+  D: 293.66,
+  E: 329.63,
+  F: 349.23,
+  G: 392.00,
+  A: 440.00,
+  B: 493.88,
+  'High C': 523.25
+};
 
-  const resetGame = useCallback(() => {
-    setScore(0);
-    setGameStats({ perfect: 0, great: 0, good: 0, miss: 0, streak: 0, maxStreak: 0 });
+// Bell audio file mapping
+const BELL_AUDIO_FILES = {
+  C: `${process.env.PUBLIC_URL}/assets/audio/C - Do.mp3`,
+  D: `${process.env.PUBLIC_URL}/assets/audio/D - Re.mp3`,
+  E: `${process.env.PUBLIC_URL}/assets/audio/E - Mi.mp3`,
+  F: `${process.env.PUBLIC_URL}/assets/audio/F - Fa.mp3`,
+  G: `${process.env.PUBLIC_URL}/assets/audio/G - So.mp3`,
+  A: `${process.env.PUBLIC_URL}/assets/audio/A - La.mp3`,
+  B: `${process.env.PUBLIC_URL}/assets/audio/B - ti.mp3`,
+  'High C': `${process.env.PUBLIC_URL}/assets/audio/High C - High Do.mp3`
+};
+
+// Drum audio file mapping  
+const DRUM_AUDIO_FILES = {
+  kick: `${process.env.PUBLIC_URL}/assets/audio/Bass drum - kick.mp3`,
+  snare: `${process.env.PUBLIC_URL}/assets/audio/Snare.mp3`,
+  hihat: `${process.env.PUBLIC_URL}/assets/audio/Hi Hat closed.mp3`,
+  crash: `${process.env.PUBLIC_URL}/assets/audio/Crash cymbal.mp3`,
+  ride: `${process.env.PUBLIC_URL}/assets/audio/Ride.mp3`,
+  tom: `${process.env.PUBLIC_URL}/assets/audio/Tom.mp3`,
+  lowTom: `${process.env.PUBLIC_URL}/assets/audio/Low Tom.mp3`,
+  scratchPull: `${process.env.PUBLIC_URL}/assets/audio/scratch-pull.mp3`,
+  scratchPush: `${process.env.PUBLIC_URL}/assets/audio/scratch-push.mp3`,
+  scratchPushPull: `${process.env.PUBLIC_URL}/assets/audio/scratch-push-pull.mp3`
+};
+
+export function useAudio() {
+  const audioContextRef = useRef(null);
+  const audioBuffersRef = useRef({});
+  const loadedRef = useRef(false);
+
+  const initAudioContext = useCallback(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContextRef.current.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+    return audioContextRef.current;
   }, []);
 
-  return (
-    <div className="App min-h-screen">
-      <BrowserRouter basename="/Jelly_JamBox">
-        <StickerToast />
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/free-play" element={<FreePlayPage />} />
-            <Route path="/rhythm-game" element={
-              <RhythmGamePage score={score} setScore={setScore} gameStats={gameStats} setGameStats={setGameStats} resetGame={resetGame} />
-            } />
-            <Route path="/simon-says" element={
-              <SimonSaysPage score={score} setScore={setScore} gameStats={gameStats} setGameStats={setGameStats} resetGame={resetGame} />
-            } />
-            <Route path="/ear-trainer" element={<EarTrainerPage />} />
-            <Route path="/loop-studio" element={<LoopStudioPage />} />
-            <Route path="/sticker-book" element={<StickerBookPage />} />
-          </Routes>
-        </AnimatePresence>
-      </BrowserRouter>
-    </div>
-  );
+  const preloadAudio = useCallback(async () => {
+    if (loadedRef.current) return;
+    
+    const ctx = initAudioContext();
+    const allFiles = { ...BELL_AUDIO_FILES, ...DRUM_AUDIO_FILES };
+    
+    const loadPromises = Object.entries(allFiles).map(async ([note, url]) => {
+      try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        audioBuffersRef.current[note] = audioBuffer;
+      } catch (error) {
+        console.warn(`Could not load audio for ${note}:`, error);
+      }
+    });
+
+    await Promise.all(loadPromises);
+    loadedRef.current = true;
+  }, [initAudioContext]);
+
+  const playBellNote = useCallback((note) => {
+    const ctx = initAudioContext();
+    const buffer = audioBuffersRef.current[note];
+    if (buffer) {
+      const source = ctx.createBufferSource();
+      const gainNode = ctx.createGain();
+      source.buffer = buffer;
+      gainNode.gain.setValueAtTime(0.7, ctx.currentTime);
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      source.start(0);
+      return;
+    }
+
+    const freq = NOTE_FREQUENCIES[note];
+    if (!freq) return;
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(freq, ctx.currentTime);
+    gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.8);
+  }, [initAudioContext]);
+
+  const playDrumSound = useCallback((drum) => {
+    const ctx = initAudioContext();
+    const buffer = audioBuffersRef.current[drum];
+    if (buffer) {
+      const source = ctx.createBufferSource();
+      const gainNode = ctx.createGain();
+      source.buffer = buffer;
+      gainNode.gain.setValueAtTime(0.8, ctx.currentTime);
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      source.start(0);
+    }
+  }, [initAudioContext]);
+
+  const playFeedbackSound = useCallback((type) => {
+    const ctx = initAudioContext();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    if (type === 'perfect') {
+      oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
+      oscillator.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+    } else if (type === 'miss') {
+      oscillator.frequency.setValueAtTime(200, ctx.currentTime);
+    } else {
+      oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+    }
+
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.3);
+  }, [initAudioContext]);
+
+  useEffect(() => {
+    preloadAudio();
+  }, [preloadAudio]);
+
+  return {
+    playBellNote,
+    playDrumSound,
+    playFeedbackSound,
+    preloadAudio,
+    initAudioContext
+  };
 }
 
-export default App;
+export default useAudio;

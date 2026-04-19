@@ -1,25 +1,21 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
 
 export const BELLS = [
-  { note: 'C', solfege: 'Do', color: '#FF3B30', image1: '/assets/bells/C 1.png', image2: '/assets/bells/C 2.png', key: '1' },
-  { note: 'D', solfege: 'Re', color: '#FF9500', image1: '/assets/bells/D 1.png', image2: '/assets/bells/D 2.png', key: '2' },
-  { note: 'E', solfege: 'Mi', color: '#FFCC00', image1: '/assets/bells/E 1.png', image2: '/assets/bells/E 2.png', key: '3' },
-  { note: 'F', solfege: 'Fa', color: '#4CD964', image1: '/assets/bells/F 1.png', image2: '/assets/bells/F 2.png', key: '4' },
-  { note: 'G', solfege: 'So', color: '#34A853', image1: '/assets/bells/G 1.png', image2: '/assets/bells/G 2.png', key: '5' },
-  { note: 'A', solfege: 'La', color: '#4285F4', image1: '/assets/bells/A 1.png', image2: '/assets/bells/A 2.png', key: '6' },
-  { note: 'B', solfege: 'Ti', color: '#AF52DE', image1: '/assets/bells/B 1.png', image2: '/assets/bells/B 2.png', key: '7' },
-  { note: 'High C', solfege: 'Do', color: '#FF2D55', image1: '/assets/bells/C 1.png', image2: '/assets/bells/C 2.png', key: '8' }
+  { note: 'C', solfege: 'Do', color: '#FF3B30', image1: `${process.env.PUBLIC_URL}/assets/bells/C 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/C 2.png`, key: '1' },
+  { note: 'D', solfege: 'Re', color: '#FF9500', image1: `${process.env.PUBLIC_URL}/assets/bells/D 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/D 2.png`, key: '2' },
+  { note: 'E', solfege: 'Mi', color: '#FFCC00', image1: `${process.env.PUBLIC_URL}/assets/bells/E 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/E 2.png`, key: '3' },
+  { note: 'F', solfege: 'Fa', color: '#4CD964', image1: `${process.env.PUBLIC_URL}/assets/bells/F 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/F 2.png`, key: '4' },
+  { note: 'G', solfege: 'So', color: '#34A853', image1: `${process.env.PUBLIC_URL}/assets/bells/G 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/G 2.png`, key: '5' },
+  { note: 'A', solfege: 'La', color: '#4285F4', image1: `${process.env.PUBLIC_URL}/assets/bells/A 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/A 2.png`, key: '6' },
+  { note: 'B', solfege: 'Ti', color: '#AF52DE', image1: `${process.env.PUBLIC_URL}/assets/bells/B 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/B 2.png`, key: '7' },
+  { note: 'High C', solfege: 'Do', color: '#FF2D55', image1: `${process.env.PUBLIC_URL}/assets/bells/C 1.png`, image2: `${process.env.PUBLIC_URL}/assets/bells/C 2.png`, key: '8' }
 ];
 
-const KEY_TO_NOTE = {
+export const KEY_TO_NOTE = {
   '1': 'C', '2': 'D', '3': 'E', '4': 'F',
   '5': 'G', '6': 'A', '7': 'B', '8': 'High C'
 };
 
-// IMPORTANT: All visual swaps use imperative DOM writes (imgRef.current.src = ...).
-// Image JSX src prop is CONSTANT (bell.image1) so React never overrides our imperative changes.
-// Dual-frame approach: both idle and pressed frames rendered; toggled via opacity + display.
-// pointer capture prevents spurious pointerleave from breaking the swap.
 function BellItem({ bell, onPlayNote, onNoteUp, highlightedNote, showNotation, registerRef }) {
   const idleRef = useRef(null);
   const pressedRef = useRef(null);
@@ -88,7 +84,6 @@ function BellItem({ bell, onPlayNote, onNoteUp, highlightedNote, showNotation, r
 }
 
 const JellyBellsRow = forwardRef(function JellyBellsRow({ onPlayNote, onNoteUp, highlightedNote, showNotation = true, enableKeyboard = true }, ref) {
-  // Parent-held map of img refs by note for keyboard-triggered swaps
   const refsRef = useRef({});
   const timersRef = useRef({});
 
@@ -97,7 +92,6 @@ const JellyBellsRow = forwardRef(function JellyBellsRow({ onPlayNote, onNoteUp, 
     else delete refsRef.current[note];
   }, []);
 
-  // Imperative API for parent pages (Simon Says, Ear Trainer) to flash a bell
   useImperativeHandle(ref, () => ({
     flashNote: (note, ms = 400) => {
       const refs = refsRef.current[note];
@@ -117,11 +111,6 @@ const JellyBellsRow = forwardRef(function JellyBellsRow({ onPlayNote, onNoteUp, 
       }, ms);
     },
   }));
-
-  useEffect(() => {
-    const timers = timersRef.current;
-    return () => Object.values(timers).forEach(t => clearTimeout(t));
-  }, []);
 
   useEffect(() => {
     if (!enableKeyboard) return;
@@ -172,5 +161,4 @@ const JellyBellsRow = forwardRef(function JellyBellsRow({ onPlayNote, onNoteUp, 
   );
 });
 
-export { JellyBellsRow, KEY_TO_NOTE };
 export default JellyBellsRow;
