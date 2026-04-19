@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/Jelly_JamBox/static/css/main.6446b2b3.css",
+    "main.js": "/Jelly_JamBox/static/js/main.a1d39278.js",
+    "static/media/ComicKings.otf": "/Jelly_JamBox/static/media/ComicKings.ff3351fbec8978a9884e.otf",
+    "index.html": "/Jelly_JamBox/index.html",
+    "main.6446b2b3.css.map": "/Jelly_JamBox/static/css/main.6446b2b3.css.map",
+    "main.a1d39278.js.map": "/Jelly_JamBox/static/js/main.a1d39278.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.6446b2b3.css",
+    "static/js/main.a1d39278.js"
+  ]
+}
