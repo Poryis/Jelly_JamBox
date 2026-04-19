@@ -113,6 +113,11 @@ const JellyBellsRow = forwardRef(function JellyBellsRow({ onPlayNote, onNoteUp, 
   }));
 
   useEffect(() => {
+    const timers = timersRef.current;
+    return () => Object.values(timers).forEach(t => clearTimeout(t));
+  }, []);
+
+  useEffect(() => {
     if (!enableKeyboard) return;
     const pressedKeys = new Set();
     const onKeyDown = (e) => {
@@ -161,4 +166,5 @@ const JellyBellsRow = forwardRef(function JellyBellsRow({ onPlayNote, onNoteUp, 
   );
 });
 
+export { JellyBellsRow };
 export default JellyBellsRow;

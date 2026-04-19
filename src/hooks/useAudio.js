@@ -115,12 +115,15 @@ export function useAudio() {
   // Play drum sound
   const playDrumSound = useCallback((drum) => {
     const ctx = initAudioContext();
+
     const buffer = audioBuffersRef.current[drum];
     if (buffer) {
       const source = ctx.createBufferSource();
       const gainNode = ctx.createGain();
+      
       source.buffer = buffer;
       gainNode.gain.setValueAtTime(0.8, ctx.currentTime);
+      
       source.connect(gainNode);
       gainNode.connect(ctx.destination);
       source.start(0);
@@ -130,6 +133,7 @@ export function useAudio() {
   // Play success/feedback sound
   const playFeedbackSound = useCallback((type) => {
     const ctx = initAudioContext();
+
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -144,8 +148,10 @@ export function useAudio() {
 
     gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
+
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.3);
   }, [initAudioContext]);
